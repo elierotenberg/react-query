@@ -1,0 +1,27 @@
+{
+  "name": "react-query",
+  "version": "1.0.0",
+  "description": "React virtual DOM querying made easy.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://git@github.com:elierotenberg/react-query.git"
+  },
+  "keywords": [
+    "react",
+    "query",
+    "jquery"
+  ],
+  "author": "Elie Rotenberg <elie@rotenberg.io>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/elierotenberg/react-query/issues"
+  },
+  "homepage": "https://github.com/elierotenberg/react-query",
+  "devDependencies": {
+    "react": "^0.11.1"
+  }
+}
