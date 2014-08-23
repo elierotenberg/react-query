@@ -21,7 +21,9 @@
     "url": "https://github.com/elierotenberg/react-query/issues"
   },
   "homepage": "https://github.com/elierotenberg/react-query",
-  "devDependencies": {
+  "devDependencies": {},
+  "dependencies": {
+    "lodash": "^2.4.1",
     "react": "^0.11.1"
   }
 }
