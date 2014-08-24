@@ -212,6 +212,7 @@ _.extend($.prototype, {
             return $._findAll(_this.vnodes, ruleset.rule);
         }));
     },
+
 });
 
 module.exports = $;
