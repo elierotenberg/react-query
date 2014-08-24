@@ -21,7 +21,11 @@
     "url": "https://github.com/elierotenberg/react-query/issues"
   },
   "homepage": "https://github.com/elierotenberg/react-query",
-  "devDependencies": {},
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-contrib-jshint": "^0.10.0",
+    "grunt-react": "^0.9.0"
+  },
   "dependencies": {
     "lodash": "^2.4.1",
     "react": "^0.11.1"

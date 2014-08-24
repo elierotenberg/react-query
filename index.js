@@ -4,9 +4,12 @@ var _ = require("lodash");
 var CssSelectorParser = require("css-selector-parser").CssSelectorParser;
 var cssSelectorParser = new CssSelectorParser();
 cssSelectorParser.registerNestingOperators(">");
-cssSelectorParser.registerAttrEqualityMods("^", "$", "*"; "~", "|");
+cssSelectorParser.registerAttrEqualityMods("^", "$", "*", "~", "|");
 
 var $ = function $(vnode) {
+    if(!(this instanceof $)) {
+        return new $(vnode);
+    }
     if(_.isArray(vnode)) {
         this.vnodes = vnode;
     }
@@ -56,163 +59,409 @@ if(!String.prototype.contains) {
 }
 
 _.extend($, {
-    _children: function _children(vnode) {
+    merge: function() {
+        return $(_.flatten(_.toArray(arguments), true));
+    },
+    toString: function toString(vnode) {
+        return $._toStringWithTabs(0)(vnode);
+    },
+    _toStringWithTabs: function _toStringWithTabs(depth) {
+        return function(vnode) {
+            var children = $.getChildren(vnode);
+            var s = [];
+            for(var k = 0; k < depth; k++) {
+                s.push("\t");
+            }
+            var tabs = s.join("");
+            var begin = tabs + "<" + $.getTagName(vnode);
+            var propsWithoutChildren = $.getPropsWithoutChildren(vnode);
+            if(propsWithoutChildren && !_.isEmpty(propsWithoutChildren)) {
+                begin += " " + _.map(propsWithoutChildren, function(value, key) {
+                    return key + '="' + value + '"';
+                }).join(" ");
+            }
+            if(children.length === 0) {
+                return begin + " />";
+            }
+            else {
+                return begin + ">\n" + _.map(children, $._toStringWithTabs(depth+1)).join("\n") + "\n" + tabs + "</" + $.getTagName(vnode) + ">";
+            }
+        };
+    },
+    getProps: function getProps(vnode) {
+        if(!vnode.props) {
+            return {};
+        }
+        return _.object(_.map(vnode.props, function(value, key) {
+            return [key, value];
+        }));
+    },
+    setProps: function setProps(props) {
+        return function(vnode) {
+            return new vnode.constructor(_.extend({}, $.getProps(vnode), props));
+        };
+    },
+    getPropsWithoutChildren: function getPropsWithoutChildren(vnode) {
+        return _.omit($.getProps(vnode), ["children"]);
+    },
+    getChildren: function getChildren(vnode) {
         if(!vnode.props.children) {
             return [];
         }
         else {
-            return React.Children.map(vnode.props.children, _.identity);
+            var res = [];
+            React.Children.forEach(vnode.props.children, function(child) {
+                res.push(child);
+            });
+            return res;
         }
     },
-    _descendants: function _descendants(vnode) {
-        var children = $._children(vnode);
-        return _.union(children, _.map(children, $._descendants));
+    getDescendants: function getDescendants(vnode) {
+        var children = $.getChildren(vnode);
+        return _.union(children, _.flatten(_.flatten(_.map(children, $.getDescendants), true)));
     },
-    _hasClass: function _hasClass(className) {
+    getTree: function getTree(vnode) {
+        var tree = $.getDescendants(vnode);
+        tree.unshift(vnode);
+        return tree;
+    },
+    getClassList: function getClassList(vnode) {
+        if(!vnode.props.className) {
+            return [];
+        }
+        else {
+            return vnode.props.className.split(" ");
+        }
+    },
+    hasClass: function hasClass(className) {
         return function(vnode) {
-            try {
-                assert(vnode.props.className);
-                assert(_.isString(vnode.props.className))
-                var cx = vnode.this.props.className.split(" ");
-                assert(_.contains(cx, className));
+            return _.contains($.getClassList(vnode), className);
+        };
+    },
+    addClass: function addClass(className) {
+        return function(vnode) {
+            var classList = $.getClassList(vnode);
+            classList.push(className);
+            return $.setProps({ className: classList.join(" ") })(vnode);
+        };
+    },
+    removeClass: function removeClass(className) {
+        return function(vnode) {
+            var classList = _.without($.getClassList(vnode), className);
+            return $.setProps({ className: classList.join(" ") })(vnode);
+        };
+    },
+    toggleClass: function toggleClass(className, optState) {
+        return function(vnode) {
+            if(!_.isUndefined(optState)) {
+                if(optState) {
+                    return $.addClass(className)(vnode);
+                }
+                else {
+                    return $.removeClass(className)(vnode);
+                }
             }
-            catch(err) {
+            else {
+                if($.hasClass(className)(vnode)) {
+                    return $.removeClass(className)(vnode);
+                }
+                else {
+                    return $.addClass(className)(vnode);
+                }
+            }
+        };
+    },
+    getTagName: function getTagName(vnode) {
+        return vnode.type.displayName;
+    },
+    setTagName: function setTagName(tagName) {
+        return function(vnode) {
+            return new vnode.constructor(_.extend({}, $.getProps(vnode), { className: $.getClassList(vnode).join(" "), }));
+        };
+    },
+    equals: function equals(other) {
+        return function(vnode) {
+            if($.getTagName(other) !== $.getTagName(vnode)) {
+                return false;
+            }
+            if(!_.isEqual($.getPropsWithoutChildren(other), $.getPropsWithoutChildren(vnode))) {
+                return false;
+            }
+            var otherChildren = $.getChildren(other);
+            var vnodeChildren = $.getChildren(vnode);
+            if(otherChildren.length !== vnodeChildren.length) {
+                return false;
+            }
+            var differentChildren = false;
+            _.each(otherChildren, function(otherChild, key) {
+                if(differentChildren) {
+                    return;
+                }
+                var vnodeChild = vnodeChildren[key];
+                if(!$.equals(otherChild, vnodeChild)) {
+                    differentChildren = true;
+                }
+            });
+            if(differentChildren) {
                 return false;
             }
             return true;
-        }
+        };
     },
-    _findAll: function _findAll(vnodes, rule) {
-        var matchingNodes = _.filter(vnodes, $._matchRule(rule));
+    wrap: function wrap(wrapper) {
+        return function(vnode) {
+            var children = $.getChildren(wrapper);
+            children.push(vnode);
+            return new wrapper.constructor(_.extend({}, $.getProps(wrapper), { children: children }));
+        };
+    },
+    append: function append(other) {
+        return function(vnode) {
+            var children = $.getChildren(vnode);
+            children.push(other);
+            return new vnode.constructor(_.extend({}, $.getProps(vnode), { children: children }));
+        };
+    },
+    findWithSelectors: function findWithSelectors(selectors) {
+        assert(_.isArray(selectors));
+        return function(vnode) {
+            return _.flatten(_.map(selectors, $.findWithSingleSelector(vnode)), true);
+        };
+    },
+    findWithSingleSelector: function findWithSingleSelector(vnode) {
+        return function(selector) {
+            assert(selector.type === "ruleSet");
+            return $.findWithRule(selector.rule, vnode);
+        };
+    },
+    findWithRule: function findWithRule(rule, vnode) {
+        assert(rule.type === "rule");
         if(!rule.rule) {
-            return matchingNodes;
+            return $.matchSingleRule(rule)(vnode) ? [vnode] : [];
         }
         else {
-            return _.union(_.map(vnodes, function(vnode) {
-                if(!rule.rule.nestingOperator) {
-                    var descendants = $._descendants(vnode);
-                    return $._findAll(descendants, rule.rule);
-                }
-                else if(rule.rule.nestingOperator === ">") {
-                    var children = $._children(vnode);
-                    return $._findAll(children, rule.rule);
-                }
-                else {
-                    throw new Error("Unsupported nesting operator.");
-                }
-            }));
+            var extractSubTargets = null;
+            var $findWithSubRule = _.partial($.findWithRule, rule.rule);
+            if(!rule.rule.nestingOperator) {
+                extractSubTargets = $.getDescendants;
+            }
+            else if(rule.rule.nestingOperator === ">") {
+                extractSubTargets = $.getChildren;
+            }
+            else {
+                throw new Error("Unsupported nesting operator '" + rule.rule.nestingOperator + "'.");
+            }
+            return _.map(extractSubTargets(vnode), $findWithSubRule);
         }
     },
-    _matchRule: function _matchRuleSet(rule) {
-        assert(ruleset.rule);
-        assert(ruleset.rule.type);
-        assert(ruleset.rule.type === rule);
-        return function (vnode) {
-            var rule = ruleset.rule;
-            var errMatch;
-            if(rule.tagName) {
-                if(vnode.displayName !== tagName) {
+    matchSingleRule: function matchSingleRule(rule) {
+        assert(rule);
+        assert(rule.type);
+        assert(rule.type === "rule");
+        return function(vnode) {
+            if(rule.tagName && rule.tagName !== "*") {
+                if($.getTagName(vnode) !== rule.tagName) {
                     return false;
                 }
             }
             if(rule.classNames) {
-                errMatch = false;
-                if(!vnode.props.className) {
-                    return false;
-                }
-                var cx = vnode.props.className.split(" ");
-                _.each(rule.classNames, function(className) {
-                    if(errMatch) {
-                        return;
-                    }
-                    if(!_.contains(cx, className)) {
-                        errMatch = true;
-                    }
-                });
-                if(errMatch) {
+                var diff = _.xor(rule.classNames, $.getClassList(vnode));
+                if(_.size(diff) > 0) {
                     return false;
                 }
             }
             if(rule.attrs) {
-                errMatch = false;
+                var differentProps = false;
+                var props = $.getProps(vnode);
+                var fail = function() {
+                    differentProps = true;
+                };
                 _.each(rule.attrs, function(specs) {
-                    if(errMatch) {
-                        return;
+                    if(differentProps) {
+                        return fail();
                     }
-                    assert(specs.valueType === "string", "Subsitue operator not supported.");
-                    if(!_.has(vnode.props, specs.name)) {
-                        errMatch = true;
-                        return;
+                    assert(specs.valueType === "string", "Subsitute operator not supported.");
+                    if(!_.has(props, specs.name)) {
+                        return fail();
                     }
-                    var nodeVal = vnode.props[specs.name];
+                    var nodeVal = props[specs.name];
                     var specVal = specs.value;
                     var op = specs.operator;
                     if(op === "=" || op === "==") {
-                        if(!(nodeVal === specVal)) {
-                            errMatch = true;
-                            return;
+                        if(nodeVal !== specVal) {
+                            return fail();
                         }
                     }
-                    if(op === "~=") {
+                    else if(op === "~=") {
                         if(!_.contains(nodeVal.split(" "), specVal)) {
-                            errMatch = true;
-                            return;
+                            return fail();
                         }
                     }
-                    if(op === "|=") {
-                        if(!(nodeVal === specVal || nodeVal.startWith(specVal + "-")) {
-                            errMatch = true;
-                            return;
+                    else if(op === "|=") {
+                        if(!(nodeVal === specVal || nodeVal.startWith(specVal + "-"))) {
+                            return fail();
                         }
                     }
-                    if(op === "^=") {
+                    else if(op === "^=") {
                         if(!(nodeVal.startWith(specVal))) {
-                            errMatch = true;
-                            return;
+                            return fail();
                         }
                     }
-                    if(op === "$=") {
+                    else if(op === "$=") {
                         if(!(nodeVal.endsWith(specVal))) {
-                            errMatch = true;
-                            return;
+                            return fail();
                         }
                     }
-                    if(op === "*=") {
+                    else if(op === "*=") {
                         if(!(nodeVal.contains(specVal))) {
-                            errMatch = true;
-                            return;
+                            return fail();
                         }
+                    }
+                    else if(op) {
+                        throw new Error("Unsupported operator: '" + op + "'.");
                     }
                 });
-                if(errMatch) {
+                if(differentProps) {
                     return false;
                 }
             }
+            return true;
         };
     },
 });
 
 _.extend($.prototype, {
     vnodes: null,
-    hasClass: hasClass(className) {
-        return _.map(this.vnodes, $._hasClass(className))
+    each: function each(fn) {
+        _.each(this.vnodes, function(vnode, key) {
+            fn.call(vnode, vnode, key);
+        });
+        return this;
+    },
+    map: function map(fn) {
+        return _.map(this.vnodes, function(vnode, key) {
+            return fn.call(vnode, vnode, key);
+        });
+    },
+    all: function all(predicate) {
+        return _.all(this.vnodes, function(vnode, key) {
+            return predicate.call(vnode, vnode, key);
+        });
+    },
+    filter: function filter(predicate) {
+        var res = [];
+        this.each(function() {
+            if(predicate(this)) {
+                res.push(this);
+            }
+        });
+        return $(res);
+    },
+    children: function children() {
+        return $(_.flatten(this.map($.getChildren), true));
+    },
+    descendants: function descendants() {
+        return $(_.flatten(this.map($.getDescendants, true));
+    },
+    tree: function tree() {
+        return _.flatten(this.map($.getTree), true);
+    },
+    hasClass: function hasClass(className) {
+        return this.all($.hasClass(className));
+    },
+    first: function first() {
+        assert(this.vnodes.length > 0, "Empty vnodes.");
+        return this.vnodes[0];
+    },
+    size: function size() {
+        return _.size(this.vnodes);
+    },
+    single: function single() {
+        assert(this.vnodes.length === 1, "Length should be exactly 1.");
+        return this.vnodes[0];
+    },
+    tagName: function tagName() {
+        if(arguments.length === 0) {
+            return $.getTagName(this.first());
+        }
+        else {
+            return $(this.map($.setTagName(arguments[0])));
+        }
+    },
+    prop: function prop() {
+        if(arguments.length === 1) {
+            return $.getProps(this.first())[arguments[0]];
+        }
+        else {
+            var props = _.object([
+                [arguments[0], arguments[1]],
+            ]);
+            return this.props(props);
+        }
+    },
+    props: function props() {
+        if(arguments.length === 0) {
+            return $.getProps(this.first());
+        }
+        else {
+            return $(this.map($.setProps(arguments[0])));
+        }
+    },
+    classList: function className() {
+        if(arguments.length === 0) {
+            return $.getClassList(this.first());
+        }
+        else {
+            return $(this.map($.setProps({ className: arguments[0].join(" ") })));
+        }
+    },
+    addClass: function addClass(className) {
+        return $(this.map($.addClass(className)));
+    },
+    removeClass: function removeClass(className) {
+        return $(this.map($.removeClass(className)));
+    },
+    toggleClass: function toggleClass(className, optState) {
+        return $(this.map($.toggleClass(className, optState)));
     },
     get: function get(index) {
-        if(!index) {
-            assert(this.vnodes.length === 1);
-            return this.vnodes[0];
-        }
+        assert(this.vnodes[index], "Invalid index.");
         return this.vnodes[index];
     },
-    findAll: function(selector) {
-        var rulesets = cssSelectorParser.parse(selector);
-        var _this = this;
-        return _.union(_.map(rulesets, function(ruleset) {
-            assert(ruleset.type === "ruleSet");
-            return $._findAll(_this.vnodes, ruleset.rule);
-        }));
+    toChildren: function toChildren() {
+        return this.vnodes;
     },
-
+    toString: function toString() {
+        if(this.vnodes.length === 1) {
+            return $.toString(this.first());
+        }
+        else {
+            return this.map($.toString).join("\n");
+        }
+    },
+    equals: function like(vnode) {
+        if(vnode instanceof $) {
+            return this.like(vnode.first());
+        }
+        return this.all($.equals(vnode));
+    },
+    find: function find(selectorString) {
+        assert(_.isString(selectorString));
+        var parsed = cssSelectorParser.parse(selectorString);
+        var selectors = parsed.type === "selectors" ? parsed.selectors : [parsed];
+        return $(_.flatten(_.map(this.tree(), $.findWithSelectors(selectors))));
+    },
+    wrap: function wrap(vnode) {
+        return $(
+            new vnode.constructor(_.extend({}, vnode.props, { children: this.vnodes }))
+        );
+    },
+    append: function append(vnode) {
+        return $(this.map($.append(vnode)));
+    },
+    expose: function expose() {
+        return this.toChildren();
+    },
 });
 
 module.exports = $;

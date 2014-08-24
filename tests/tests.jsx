@@ -4,17 +4,17 @@ var assert = require("assert");
 var $ = require("../");
 
 
-var $div = $(React.DOM.div({className: "hello world"}));
+var $div = $(<div className="hello world" />);
 console.warn("div", $div.toString());
 console.warn($.getClassList($div.first()));
 assert($div.hasClass("hello"));
 assert($div.hasClass(("world")));
 assert(!($div.hasClass("foo")));
 assert($div.toString() === '<div className="hello world" />');
-var $div2 = $(React.DOM.div({className: "foobar"}));
-var $nested = $(React.DOM.div({className: "outer"}, 
-        React.DOM.p({className: "inner"})
-));
+var $div2 = $(<div className="foobar" />);
+var $nested = $(<div className="outer">
+        <p className="inner"></p>
+</div>);
 console.warn("nested", $nested.toString());
 /*
  * <div className="outer">
@@ -26,9 +26,9 @@ console.warn("inner", $inner.toString());
 /*
  * <p className="inner" />
  */
-var $wrapped = $nested.wrap(React.DOM.div({className: "wrapper"}));
+var $wrapped = $nested.wrap(<div className="wrapper" />);
 console.warn("wrapped", $wrapped.toString());
-var $appended = $nested.append(React.DOM.div({className: "appended"}));
+var $appended = $nested.append(<div className="appended" />);
 console.warn("appended", $appended.toString());
 /*
  * <div className="outer">
@@ -45,3 +45,8 @@ console.warn("appended", $appended.toString());
  */
  var $toggleClass = $nested.toggleClass("outer").toggleClass("baz").addClass("foo").removeClass("baz");
  console.warn("toggleClass", $toggleClass.toString());
+/*
+ * <div className="foo">
+ *     <p className="inner" />
+ * </div>
+ */
