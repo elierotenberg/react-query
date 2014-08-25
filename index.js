@@ -378,7 +378,7 @@ _.extend($.prototype, {
         });
     },
     contains: function contains(vnode) {
-        return _.contains(this.expose(), vnode);
+        return _.contains(this.vnodes, vnode);
     },
     containsLike: function containsLike(vnode) {
         return this.any(function() {
@@ -473,7 +473,7 @@ _.extend($.prototype, {
             return $.toString(this.first());
         }
         else {
-            return this.map($.toString).join("\n");
+            return "[" + this.map($.toString).join(",") + "]";
         }
     },
     equals: function like(vnode) {
