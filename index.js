@@ -424,56 +424,68 @@ _.extend($, {
                 }
             }
             if(rule.classNames) {
-                var diff = _.xor(rule.classNames, $.getClassList(vnode));
-                if(_.size(diff) > 0) {
+                var missingClass = false;
+                var failClass = function failClass() {
+                    missingClass = true;
+                };
+                var classList = $.getClassList(vnode);
+                _.each(rule.classNames, function(className) {
+                    if(missingClass) {
+                        return failClass();
+                    }
+                    if(!_.contains(classList, className)) {
+                        return failClass();
+                    }
+                });
+                if(missingClass) {
                     return false;
                 }
             }
             if(rule.attrs) {
                 var differentProps = false;
                 var props = $.getProps(vnode);
-                var fail = function() {
+                var failProps = function() {
                     differentProps = true;
                 };
                 _.each(rule.attrs, function(specs) {
                     if(differentProps) {
-                        return fail();
+                        return failProps();
                     }
                     assert(specs.valueType === "string", "Subsitute operator not supported.");
                     if(!_.has(props, specs.name)) {
-                        return fail();
+                        return failProps();
                     }
                     var nodeVal = props[specs.name];
                     var specVal = specs.value;
                     var op = specs.operator;
                     if(op === "=" || op === "==") {
                         if(nodeVal !== specVal) {
-                            return fail();
+                            return failProps();
                         }
                     }
                     else if(op === "~=") {
                         if(!_.contains(nodeVal.split(" "), specVal)) {
-                            return fail();
+                            return failProps();
                         }
                     }
                     else if(op === "|=") {
                         if(!(nodeVal === specVal || nodeVal.startWith(specVal + "-"))) {
-                            return fail();
+                            return failProps();
                         }
                     }
                     else if(op === "^=") {
                         if(!(nodeVal.startWith(specVal))) {
-                            return fail();
+                            return failProps();
                         }
                     }
                     else if(op === "$=") {
                         if(!(nodeVal.endsWith(specVal))) {
-                            return fail();
+                            return failProps();
                         }
                     }
                     else if(op === "*=") {
                         if(!(nodeVal.contains(specVal))) {
-                            return fail();
+                            return failProps();
                         }
                     }
                     else if(op) {

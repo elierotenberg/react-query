@@ -62,3 +62,15 @@ console.warn("appended", $appended.toString());
 
 var $li = $nested.replace({ ".inner": function() { return $(this).addClass("hello").props({ foo: "bar" }).text("hello world !!!"); }});
 console.warn($li.toString());
+
+var $dropdown = $(
+	<div className="dropdown">
+		<a className="DropDown-toggle dropdown-toggle">Toggle</a>
+		<ul className="dropdown-menu">
+			<li></li>
+			<li></li>
+		</ul>
+	</div>
+);
+var $toggle = $dropdown.find(".dropdown-toggle");
+console.warn($toggle.toString());

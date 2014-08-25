@@ -62,3 +62,15 @@ console.warn("appended", $appended.toString());
 
 var $li = $nested.replace({ ".inner": function() { return $(this).addClass("hello").props({ foo: "bar" }).text("hello world !!!"); }});
 console.warn($li.toString());
+
+var $dropdown = $(
+	React.DOM.div({className: "dropdown"}, 
+		React.DOM.a({className: "DropDown-toggle dropdown-toggle"}, "Toggle"), 
+		React.DOM.ul({className: "dropdown-menu"}, 
+			React.DOM.li(null), 
+			React.DOM.li(null)
+		)
+	)
+);
+var $toggle = $dropdown.find(".dropdown-toggle");
+console.warn($toggle.toString());
