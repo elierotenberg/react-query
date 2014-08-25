@@ -54,6 +54,8 @@ console.warn("appended", $appended.toString());
  console.warn("replace", $replace.toString());
 
  var $replaceFn = $nested.replace(".inner", function() {
-    return $(this).wrap(React.DOM.div({className: "wrapped"}));
+    var $r = $(this).wrap(React.DOM.div({className: "wrapped"}));
+    console.warn($r.toString());
+    return $r;
  });
  console.warn("replaceFn", $replaceFn.toString());
