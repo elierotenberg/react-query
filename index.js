@@ -222,6 +222,23 @@ _.extend($, {
             return new vnode.constructor(_.extend({}, $.getProps(vnode), { children: children }));
         };
     },
+    replace: function replace($match, replaceWithVNode) {
+        return function(vnode) {
+            if($match.contains(vnode)) {
+                if(_.isFunction(replaceWithVNode)) {
+                    return replaceWithVNode.apply(vnode, vnode);
+                }
+                else {
+                    return replaceWithVNode;
+                }
+            }
+            else {
+                return new vnode.constructor(_.extend({}, $.getPropsWithoutChildren(vnode), {
+                    children: _.map($.getChildren(vnode), $.replace($match, replaceWithVNode)),
+                }));
+            }
+        };
+    },
     findWithSelectors: function findWithSelectors(selectors) {
         assert(_.isArray(selectors));
         return function(vnode) {
@@ -348,6 +365,19 @@ _.extend($.prototype, {
             return predicate.call(vnode, vnode, key);
         });
     },
+    any: function any(predicate) {
+        return _.any(this.vnodes, function(vnode, key) {
+            return predicate.call(vnode, vnode, key);
+        });
+    },
+    contains: function contains(vnode) {
+        return _.contains(this.expose(), vnode);
+    },
+    containsLike: function containsLike(vnode) {
+        return this.any(function() {
+            $(this).like(vnode);
+        });
+    },
     filter: function filter(predicate) {
         var res = [];
         this.each(function() {
@@ -361,7 +391,7 @@ _.extend($.prototype, {
         return $(_.flatten(this.map($.getChildren), true));
     },
     descendants: function descendants() {
-        return $(_.flatten(this.map($.getDescendants, true));
+        return $(_.flatten(this.map($.getDescendants), true));
     },
     tree: function tree() {
         return _.flatten(this.map($.getTree), true);
@@ -450,6 +480,22 @@ _.extend($.prototype, {
         var parsed = cssSelectorParser.parse(selectorString);
         var selectors = parsed.type === "selectors" ? parsed.selectors : [parsed];
         return $(_.flatten(_.map(this.tree(), $.findWithSelectors(selectors))));
+    },
+    replace: function replace() {
+        if(arguments.length === 2) {
+            var selectorString = arguments[0];
+            var replaceWithVNode = arguments[1];
+            var $match = this.find(selectorString);
+            return $(this.map($.replace($match, replaceWithVNode)));
+        }
+        else {
+            var selectorStringToVNodes = arguments[0];
+            var $curr = this;
+            _.each(selectorStringToVNodes, function(replaceWithVNode, selectorString) {
+                $curr = $curr.replace(selectorString, replaceWithVNode);
+            });
+            return $curr;
+        }
     },
     wrap: function wrap(vnode) {
         return $(

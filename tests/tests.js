@@ -45,3 +45,15 @@ console.warn("appended", $appended.toString());
  */
  var $toggleClass = $nested.toggleClass("outer").toggleClass("baz").addClass("foo").removeClass("baz");
  console.warn("toggleClass", $toggleClass.toString());
+/*
+ * <div className="foo">
+ *     <p className="inner" />
+ * </div>
+ */
+ var $replace = $nested.replace(".inner", React.DOM.div({className: "new-inner"}));
+ console.warn("replace", $replace.toString());
+
+ var $replaceFn = $nested.replace(".inner", function() {
+    return $(this).wrap(React.DOM.div({className: "wrapped"}));
+ });
+ console.warn("replaceFn", $replaceFn.toString());

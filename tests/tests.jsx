@@ -50,3 +50,10 @@ console.warn("appended", $appended.toString());
  *     <p className="inner" />
  * </div>
  */
+ var $replace = $nested.replace(".inner", <div className="new-inner" />);
+ console.warn("replace", $replace.toString());
+
+ var $replaceFn = $nested.replace(".inner", function() {
+    return $(this).wrap(<div className="wrapped" />);
+ });
+ console.warn("replaceFn", $replaceFn.toString());
