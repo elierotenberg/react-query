@@ -59,3 +59,6 @@ console.warn("appended", $appended.toString());
     return $r;
  });
  console.warn("replaceFn", $replaceFn.toString());
+
+var $li = $nested.replace({ ".inner": function() { return $(this).addClass("hello").props({ foo: "bar" }).text("hello world !!!"); }});
+console.warn($li.toString());
