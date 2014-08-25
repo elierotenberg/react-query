@@ -339,9 +339,6 @@ _.extend($, {
             }
             var children = $.getChildren(vnode);
             children.push(other);
-            console.warn("append", children);
-            console.warn("squeezed", $.squeezeChildren(children));
-            console.warn("maybe", $.maybeChildren(children));
             return new vnode.constructor(_.extend({}, $.getProps(vnode), $.maybeChildren({ children: $.squeezeChildren(children) })));
         };
     },
