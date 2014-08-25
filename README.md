@@ -43,14 +43,16 @@ var DropDown = React.createClass({
     },
     // Functionally, React-style:
     render: function() {
-        return $(this.props.children).replace({
-            ".dropdown-toggle": function() {
-                return $(this).prop("onClick", this.toggleMenu);
-            },
-            ".dropdown-menu": function() {
-                return $(this).toggleClass("dropdown-toggled", this.state.toggled);
-            },
-        }).wrap(<div className="dropdown" />);
+        return (<div className="dropdown">
+            $(this.props.children).replace({
+                ".dropdown-toggle": function() {
+                    return $(this).prop("onClick", this.toggleMenu);
+                },
+                ".dropdown-menu": function() {
+                    return $(this).toggleClass("dropdown-toggled", this.state.toggled);
+                },
+            }).toChildren()
+        </div>);
     }
 });
 
