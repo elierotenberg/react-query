@@ -184,8 +184,9 @@ Acceptes forms:
 - Single selector string: Only one selector string, all the occurences matching this selector will be replaced.
 - Multiple selector string: Pass an Object mapping each selector string to what it should be replaced with.
 - Plain value for the vnode to insert: Will be cloned and replace each matching vnode.
-- Function returning a new vnode: Will be applied to the elements to be replaced, and the return value will be inserted insert. The callback
-is passed the vnode to be replaced as first argument, as also as `this` context. Useful for "patching" trees.
+- Function returning a new vnode (or a new vnode wrapped in a `$` instance): Will be applied to the elements to be replaced, and the return value will be inserted insert. The callback
+is passed the vnode to be replaced as first argument, as also as `this` context. Useful for "patching" trees. If the return value is a single descriptor wrapped in a `$` instance, it will be coerced
+to a descriptor using `$#single`.
 
 ##### `$r.wrap(vnode: descriptor): $`
 Returns a new `$` instance in which each descriptor is wrapped as the last child of `vnode` (and sole child if `vnode` had no children of course).

@@ -225,11 +225,18 @@ _.extend($, {
     replace: function replace($match, replaceWithVNode) {
         return function(vnode) {
             if($match.contains(vnode)) {
+                var r;
                 if(_.isFunction(replaceWithVNode)) {
-                    return replaceWithVNode.apply(vnode, vnode);
+                    r = replaceWithVNode.apply(vnode, vnode);
                 }
                 else {
-                    return replaceWithVNode;
+                    r = replaceWithVNode;
+                }
+                if(r instanceof $) {
+                    return r.single();
+                }
+                else {
+                    return r;
                 }
             }
             else {
