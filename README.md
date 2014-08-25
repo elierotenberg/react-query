@@ -175,6 +175,16 @@ Accepted tokens are:
 
 Note that performance-wise, unlike browsers, `$` looks up top-down and not bottom-up.
 
+##### `$r.replace(selector: String, vnode: descriptor)` or `$r.replace(Object<selector: String, vnode: descriptor>)`
+##### or `$r.replace(selector:String, Function(vnode: descriptor): descriptor)` or `$r.replace(Object<selector: String, Function(vnode: descriptor): descriptor)`.
+Returns a new `$` instance with each descriptor matched by the selector(s) replaced with a new vnode.
+Acceptes forms:
+- Single selector string: Only one selector string, all the occurences matching this selector will be replaced.
+- Multiple selector string: Pass an Object mapping each selector string to what it should be replaced with.
+- Plain value for the vnode to insert: Will be cloned and replace each matching vnode.
+- Function returning a new vnode: Will be applied to the elements to be replaced, and the return value will be inserted insert. The callback
+is passed the vnode to be replaced as first argument, as also as `this` context. Useful for "patching" trees.
+
 ##### `$r.wrap(vnode: descriptor): $`
 Returns a new `$` instance in which each descriptor is wrapped as the last child of `vnode` (and sole child if `vnode` had no children of course).
 
