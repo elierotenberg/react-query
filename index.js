@@ -665,4 +665,39 @@ _.extend($.prototype, {
     },
 });
 
+$.Mixin = {
+    $: null,
+    _$Cache: null,
+    componentWillMount: function componentWillMount() {
+        if(this.props.children) {
+            this._$resetCache();
+        }
+    },
+    componentWillReceiveProps: function componentWillReceiveProps(props) {
+        if(props.children !== this.props.children) {
+            this._$resetCache();
+        }
+    },
+    _$resetCache: function _$resetCache() {
+        if(!this.props.children) {
+            this.$ = null;
+            this._$Cache = null;
+            return;
+        }
+        this.$ = $(this.props.children);
+        this._$Cache = {};
+        this.$.find = this._$find;
+    },
+    _$find: function _$find(selectorString) {
+        if(!this._$Cache[selectorString]) {
+            this._$Cache[selectorString] = $.prototype.find.call(this.$, selectorString);
+        }
+        return this._$Cache[selectorString];
+    },
+    componentWillUnmount: function componentWillUnmount() {
+        this.$ = null;
+        this._$Cache = null;
+    },
+};
+
 module.exports = $;

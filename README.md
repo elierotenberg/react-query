@@ -195,5 +195,23 @@ Returns a new `$` instance in which each descriptor is wrapped as the last child
 Returns a new `$` instance in which each descriptor has `vnode` as its last child (and sole child if this descriptor had no children of course).
 
 
+### Mixin
+
+`react-query` comes with a mixin that simplifies its usage and in addition caches a `$` instance wrapping the current `this.props.children`, and any calls to `this.$.find`.
+Cache is reset every time `this.props.children` changes, and is cleaned on unmounting. Calls to `this.$.find` happing in `$#replace` and alike are also cached.
+
+```js
+React.createClass({
+    mixins: [$.Mixin],
+    render: function() {
+        return this.$.replace({
+            ".wrap-this-with-a-div-please": function() { return $(this).wrap(<div>); },
+            ".add-a-neat-className-to-this": function() { return $(this).addClass("neat"); },
+        });
+    },
+})
+```
+
+
 ### LICENSE
 MIT Elie Rotenberg <elie@rotenberg.io>
