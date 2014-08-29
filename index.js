@@ -11,10 +11,10 @@ var $ = function $(vnodes) {
         return new $(vnodes);
     }
     if(_.isArray(vnodes)) {
-        this.vnodes = _.map(vnodes, $.coerceTextNode);
+        this.vnodes = _.map(vnodes, $.coerceNode);
     }
     else {
-        this.vnodes = [$.coerceTextNode(vnodes)];
+        this.vnodes = [$.coerceNode(vnodes)];
     }
 };
 
@@ -89,10 +89,10 @@ _.extend($, {
             return hash;
         }
         else if($.isTextNode(hash) || _.isString(hash.children)) {
-            return $.coerceTextNode(hash);
+            return $.coerceNode(hash);
         }
         else if(_.isArray(hash.children) && hash.children.length === 1) {
-            return _.extend({}, hash, { children: $.coerceTextNode(hash.children) });
+            return _.extend({}, hash, { children: $.coerceNode(hash.children) });
         }
         else if(_.isArray(hash.children) && hash.children.length === 0) {
             return _.omit(hash, "children");
@@ -102,11 +102,17 @@ _.extend($, {
         }
     },
     isTextNode: function isTextNode(vnode) {
-        return _.isString(vnode.props);
+        return vnode && vnode.props && _.isString(vnode.props);
     },
-    coerceTextNode: function coerceTextNode(vnode) {
+    isNullNode: function isNullNode(vnode) {
+        return vnode === null;
+    },
+    coerceNode: function coerceNode(vnode) {
         if($.isTextNode(vnode)) {
             return vnode.props;
+        }
+        else if($.isNullNode(vnode)) {
+            return React.DOM.noscript(null, null);
         }
         else {
             return vnode;
@@ -144,7 +150,7 @@ _.extend($, {
         if($.isTextNode(vnode)) {
             return vnode;
         }
-        else if(_.isString(vnode)) {
+        else if(_.isString(vnode) || $.isNullNode(vnode)) {
             return {};
         }
         if(!vnode.props) {
@@ -159,6 +165,9 @@ _.extend($, {
             if($.isTextNode(vnode)) {
                 return vnode.props;
             }
+            else if($.isNullNode(vnode)) {
+                return vnode;
+            }
             else if(_.isString(vnode)) {
                 return vnode;
             }
@@ -166,22 +175,17 @@ _.extend($, {
         };
     },
     getPropsWithoutChildren: function getPropsWithoutChildren(vnode) {
+        vnode = $.coerceNode(vnode);
         return _.omit($.getProps(vnode), ["children"]);
     },
     getChildren: function getChildren(vnode) {
-        if($.isTextNode(vnode)) {
-            return [];
-        }
-        else if(_.isString(vnode)) {
-            return [];
-        }
-        else if(!vnode.props.children) {
+        if($.isTextNode(vnode) || $.isNullNode(vnode) || _.isString(vnode) || !vnode.props.children) {
             return [];
         }
         else {
             var res = [];
             React.Children.forEach(vnode.props.children, function(child) {
-                res.push($.coerceTextNode(child));
+                res.push($.coerceNode(child));
             });
             return res;
         }
@@ -199,13 +203,7 @@ _.extend($, {
         return tree;
     },
     getClassList: function getClassList(vnode) {
-        if($.isTextNode(vnode)) {
-            return [];
-        }
-        else if(_.isString(vnode)) {
-            return [];
-        }
-        if(!vnode.props.className) {
+        if($.isTextNode(vnode) || $.isNullNode(vnode) || _.isString(vnode) || !vnode.props.className) {
             return [];
         }
         else {
@@ -222,7 +220,7 @@ _.extend($, {
             if($.isTextNode(vnode)) {
                 return vnode.props;
             }
-            else if(_.isString(vnode)) {
+            else if(_.isString(vnode) || $.isNullNode(vnode)) {
                 return vnode;
             }
             var classList = $.getClassList(vnode);
@@ -235,7 +233,7 @@ _.extend($, {
             if($.isTextNode(vnode)) {
                 return vnode.props;
             }
-            else if(_.isString(vnode)) {
+            else if(_.isString(vnode) || $.isNullNode(vnode)) {
                 return vnode;
             }
             var classList = _.without($.getClassList(vnode), className);
@@ -266,6 +264,9 @@ _.extend($, {
         if($.isTextNode(vnode) || _.isString(vnode)) {
             return "Text";
         }
+        else if($.isNullNode(vnode)) {
+            return "Null";
+        }
         return vnode.type.displayName;
     },
     setTagName: function setTagName(tagName) {
@@ -273,17 +274,16 @@ _.extend($, {
             if($.isTextNode(vnode)) {
                 return vnode.props;
             }
-            else if(_.isString(vnode)) {
+            else if(_.isString(vnode) || $.isNullNode(vnode)) {
                 return vnode;
             }
             return new vnode.constructor(_.extend({}, $.getProps(vnode), { className: $.getClassList(vnode).join(" "), }));
         };
     },
     equals: function equals(other) {
-        if($.isTextNode(other)) {
-            other = other.props;
-        }
+        other = $.coerceNode(other);
         return function(vnode) {
+            vnode = $.coerceNode(vnode);
             if($.isTextNode(vnode)) {
                 vnode = vnode.props;
             }
@@ -318,7 +318,7 @@ _.extend($, {
         };
     },
     wrap: function wrap(wrapper) {
-        wrapper = $.coerceTextNode(wrapper);
+        wrapper = $.coerceNode(wrapper);
         return function(vnode) {
             var children = $.getChildren(wrapper);
             if($.isTextNode(vnode)) {
@@ -329,7 +329,7 @@ _.extend($, {
         };
     },
     append: function append(other) {
-        other = $.coerceTextNode(other);
+        other = $.coerceNode(other);
         return function(vnode) {
             if($.isTextNode(vnode)) {
                 return vnode.props;
@@ -649,6 +649,7 @@ _.extend($.prototype, {
         }
     },
     wrap: function wrap(vnode) {
+        vnode = $.coerceNode(vnode);
         return $(
             new vnode.constructor(_.extend({}, vnode.props, { children: $.squeezeChildren($(this).toChildren()) }))
         );

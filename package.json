@@ -1,6 +1,6 @@
 {
   "name": "react-query",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "React virtual DOM querying made easy.",
   "main": "index.js",
   "scripts": {
