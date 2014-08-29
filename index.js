@@ -448,7 +448,7 @@ _.extend($, {
                     if(differentProps) {
                         return failProps();
                     }
-                    assert(specs.valueType === "string", "Subsitute operator not supported.");
+                    assert(!_.has(specs, "valueType") || specs.valueType === "string", "Subsitute operator not supported.");
                     if(!_.has(props, specs.name)) {
                         return failProps();
                     }
